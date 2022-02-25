@@ -103,15 +103,15 @@ endif
 " Additional options {{{2
 " Prefix creation date when opening a new line {{{3
 if exists("g:Todo_txt_prefix_creation_date")
-    nnoremap <script> <silent> <buffer> o o<C-R>=strftime("%Y-%m-%d")<CR> 
-    nnoremap <script> <silent> <buffer> O O<C-R>=strftime("%Y-%m-%d")<CR> 
-    inoremap <script> <silent> <buffer> <CR> <CR><C-R>=strftime("%Y-%m-%d")<CR> 
+    nnoremap <script> <silent> <buffer> o o(C) <C-R>=strftime("%Y-%m-%d") <CR>
+    nnoremap <script> <silent> <buffer> O O(C) <C-R>=strftime("%Y-%m-%d") <CR>
+    inoremap <script> <silent> <buffer> <CR> <CR>(C) <C-R>=strftime("%Y-%m-%d") <CR>
 endif
 
 " Functions for maps {{{1
 function! s:ChangeDueDateWrapper(by_days, repeat_mapping)
     call todo#CreateNewRecurrence(0)
-    call todo#ChangeDueDate(a:by_days, 'd', '')
+    call todo#ChangeStartDate(a:by_days, 'd', '')
     silent! call repeat#set(a:repeat_mapping, v:count)
 endfunction
 

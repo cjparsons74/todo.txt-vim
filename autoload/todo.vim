@@ -44,7 +44,7 @@ function! todo#PrioritizeAdd (priority)
         :call todo#PrioritizeAddAction(a:priority)
         let oldpos[2]+=4
     else
-        exec ':s/^([A-F])/('.a:priority.')/'
+        exec ':s/^([A-FS])/('.a:priority.')/'
     endif
     call setpos('.',oldpos)
 endfunction
@@ -115,7 +115,7 @@ function! todo#MarkAsDone(status)
     if (getline(".") =~ '^ ')
         normal! gIx
     else
-        normal! Ix 
+        normal! Ix
     endif
 endfunction
 
@@ -380,7 +380,7 @@ function! GetGroups(symbol,begin, end)
     return l:groups
 endfunction
 
-" Insert a space if needed (the first char isn't '!' or ' ') in front of 
+" Insert a space if needed (the first char isn't '!' or ' ') in front of
 " sort parameters
 function! Todo_txt_InsertSpaceIfNeeded(str)
     let l:c=strpart(a:str,1,1)
@@ -393,16 +393,7 @@ endfunction
 " function todo#CreateNewRecurrence {{{2
 function! todo#CreateNewRecurrence(triggerOnNonStrict)
     " Given a line with a rec:timespan, create a new task based off the
-    " recurrence and move the recurring tasks due:date to the next occurrence.
-    "
-    " This is implemented by a few other systems, so we will try to be as
-    " compatible as possible with the existing specifications.
-    "
-    " Other example implementations:
-    "   <http://swiftodoapp.com/>
-    "   <https://github.com/bram85/todo.txt-tools/wiki/Recurrence>
-    "
-
+    " recurrence and set the start date to the new date
     let l:currentline = getline('.')
 
     " Don't operate on complete tasks
@@ -458,9 +449,9 @@ function! todo#CreateNewRecurrence(triggerOnNonStrict)
     " So, we don't need to do anything for strict mode. Non-strict mode requires
     " setting the current date.
     if l:is_strict
-        call todo#ChangeDueDate(l:units, l:unit_type, '')
+        call todo#ChangeStartDate(l:units, l:unit_type, '')
     else
-        call todo#ChangeDueDate(l:units, l:unit_type, strftime('%Y-%m-%d'))
+        call todo#ChangeStartDate(l:units, l:unit_type, strftime('%Y-%m-%d'))
     endif
 
     " Move onto the copied task
@@ -470,9 +461,9 @@ function! todo#CreateNewRecurrence(triggerOnNonStrict)
     endif
 endfunction
 
-" function todo#ChangeDueDate {{{2
-function! todo#ChangeDueDate(units, unit_type, from_reference)
-    " Change the due:date on the current line by a number of days, months or
+" function todo#ChangeStartDate {{{2
+function! todo#ChangeStartDate(units, unit_type, from_reference)
+    " Change the start date on the current line by a number of days, months or
     " years
     "
     " units             The number of unit_type to add or subtract, integer
@@ -491,20 +482,9 @@ function! todo#ChangeDueDate(units, unit_type, from_reference)
         return
     endif
 
-    let l:dueDateRex = '\v\c(^|\s)due:\zs\d{4}\-\d{2}\-\d{2}\ze(\s|$)'
+    let l:dueDateRex = '\v\c(^|\s)\zs\d{4}\-\d{2}\-\d{2}\ze(\s|$)'
 
     let l:duedate = matchstr(l:currentline, l:dueDateRex)
-    if l:duedate ==# ''
-        " No due date on current line, then add the due date as an offset from
-        " current date. I.e. a v:count of 1 is due tomorrow, etc
-        if l:currentline =~? '\v\c(^|\s)due:'
-            " Has an invalid due: keyword, so don't add another, and don't
-            " change the line
-            return
-        endif
-        let l:duedate = strftime('%Y-%m-%d')
-        let l:currentline .= ' due:' . l:duedate
-    endif
     " If a valid reference has been passed, let's use it.
     if a:from_reference =~# '\v^\d{4}\-\d{2}\-\d{2}$'
         let l:duedate = a:from_reference
@@ -850,6 +830,39 @@ fun! todo#Complete(findstart, base)
         endif
         return ret
     endif
+endfun
+
+fun! todo#FilterPastFuture()
+    " Work through the lines of the file finding items
+    " - with a priority other than S with a start date in the future: make them S
+    " - with S priority and a start date today or in the past: make them C
+    let line_num=1
+    let last_line=line('$')
+    while line_num <= last_line
+        let line=getline(line_num)
+        let match=matchlist(line, '\v\(([A-FS])\) +(\d{4}-\d{2}-\d{2})')
+
+        " Didn't match -> completed lines
+        if empty(match)
+            break
+        endif
+
+        if match[1]=="S"
+            " Bring back to priority C if slept
+            if match[2] <= strftime("%Y-%m-%d")
+                echom "Bringing back " . line
+                exec ':'.line_num.'s/^(S)/(C)/'
+            endif
+        else
+            " Make priority S if time is in the future
+            "
+            if match[2] > strftime("%Y-%m-%d")
+                echom "Sleeping w/ matches ".string(match)." strftime ". strftime("%Y-%m-%d")."  ". line
+                exec ':'.line_num.'s/^([A-FS])/(S)/'
+            endif
+        endif
+        let line_num=line_num+1
+    endwhile
 endfun
 
 " vim: tabstop=4 shiftwidth=4 softtabstop=4 expandtab foldmethod=marker
