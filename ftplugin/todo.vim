@@ -141,23 +141,19 @@ endfunction "}}}3
 
 " TodoFoldLevel(lnum) {{{2
 function! TodoFoldLevel(lnum)
-    let this_context = s:get_contextproject(a:lnum)
-    let next_context = s:get_contextproject(a:lnum - 1)
-
-    if g:Todo_fold_char == 'x'
-        " fold on cmpleted task
-        return  match(getline(a:lnum),'\C^x\s') + 1
+    let linestart=getline(v:lnum)[:2]
+    if linestart == "(A)"
+        return 1
+    elseif linestart == "(B)"
+        return 2
+    elseif linestart == "(C)"
+        return 3
+    elseif getline(v:lnum)[0] == "("
+        return 4
+    elseif getline(v:lnum)[0] == "x"
+        return 5
     endif
-
-    let fold_level = 0
-
-    if this_context ==# next_context
-        let fold_level = '1'
-    else
-        let fold_level = '>1'
-    endif
-
-    return fold_level
+    return 0
 endfunction
 
 " TodoFoldText() {{{2
