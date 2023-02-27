@@ -98,6 +98,12 @@ endif
     nmap              <silent> <buffer> <localleader>P <Plug>TodotxtDecrementDueDateNormal
     vmap              <silent> <buffer> <localleader>P <Plug>TodotxtDecrementDueDateVisual
 
+" fold level mappings 
+    nmap <silent> <buffer> <localleader>0 :setlocal foldlevel=0<CR>
+    nmap <silent> <buffer> <localleader>1 :setlocal foldlevel=1<CR>
+    nmap <silent> <buffer> <localleader>2 :setlocal foldlevel=2<CR>
+    nmap <silent> <buffer> <localleader>3 :setlocal foldlevel=3<CR>
+
 endif
 
 " Additional options {{{2
